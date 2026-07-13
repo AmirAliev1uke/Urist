@@ -15,6 +15,12 @@ router = APIRouter(prefix="/api/knowledge", tags=["knowledge"])
 
 ALLOWED_DOC_TYPES = {"code", "judicial_practice", "law", "other"}
 MAX_PDF_SIZE = 50 * 1024 * 1024  # 50 МБ
+KNOWLEDGE_ALLOWED_EXTENSIONS = (".pdf", ".docx", ".doc")
+
+
+def _is_allowed_knowledge_file(filename: str) -> bool:
+    """Проверить расширение файла для базы знаний (PDF, DOCX, DOC)."""
+    return filename.lower().endswith(KNOWLEDGE_ALLOWED_EXTENSIONS)
 
 
 class KnowledgeDocumentOut(BaseModel):
@@ -38,8 +44,11 @@ async def upload_knowledge_pdf(
     session: AsyncSession = Depends(get_session),
 ) -> dict:
     """Загрузить PDF в базу знаний (закон, кодекс, судебная практика)."""
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Ожидается файл PDF.")
+    if not file.filename or not _is_allowed_knowledge_file(file.filename):
+        raise HTTPException(
+            status_code=400,
+            detail="Ожидается файл PDF, DOCX или DOC.",
+        )
 
     if doc_type not in ALLOWED_DOC_TYPES:
         raise HTTPException(

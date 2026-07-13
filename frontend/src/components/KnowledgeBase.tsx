@@ -47,7 +47,11 @@ export function KnowledgeBase() {
 
   const { getRootProps, getInputProps } = useDropzone({
     onDrop: (files) => setSelectedFile(files[0] ?? null),
-    accept: { 'application/pdf': ['.pdf'] },
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/msword': ['.doc'],
+    },
     multiple: false,
   })
 
@@ -61,7 +65,7 @@ export function KnowledgeBase() {
           {selectedFile ? (
             <div>📎 {selectedFile.name} ({Math.round(selectedFile.size / 1024)} КБ)</div>
           ) : (
-            <div className="dz-hint">Нажмите или перетащите PDF (ГК РФ, НК РФ, практика…)</div>
+            <div className="dz-hint">Нажмите или перетащите PDF/DOCX/DOC (ГК РФ, НК РФ, практика…)</div>
           )}
         </div>
 

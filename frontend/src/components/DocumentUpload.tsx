@@ -36,6 +36,7 @@ export function DocumentUpload({ onAnalyzed }: Props) {
     accept: {
       'application/pdf': ['.pdf'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/msword': ['.doc'],
     },
     multiple: false,
     disabled: loading,
@@ -64,7 +65,7 @@ export function DocumentUpload({ onAnalyzed }: Props) {
           Перетащите документ для анализа
         </div>
         <div className="dz-hint">
-          или нажмите для выбора файла · PDF или DOCX · договоры, иски, проекты
+          или нажмите для выбора файла · PDF / DOCX / DOC · договоры, иски, проекты
         </div>
       </div>
       {error && (

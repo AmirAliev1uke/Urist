@@ -1,9 +1,9 @@
 """RAG-оркестрация: связывает парсинг, классификацию, embeddings, поиск и LLM.
 
 Два основных сценария:
-  - ingest_document: наполнение базы знаний (Поток A, только PDF)
-    PDF → парсинг → авто-классификация → чанкование → embedding → Qdrant
-  - analyze_document: анализ документа юриста (Поток B, PDF + DOCX)
+  - ingest_document: наполнение базы знаний (Поток A, PDF + DOCX + DOC)
+    документ → парсинг → авто-классификация → чанкование → embedding → Qdrant
+  - analyze_document: анализ документа юриста (Поток B, PDF + DOCX + DOC)
     документ → embedding запроса → поиск в Qdrant → промпт → LLM → отчёт
 """
 from loguru import logger
@@ -14,7 +14,6 @@ from app.core.classifier import extract_metadata
 from app.core.document_parser import parse_document
 from app.core.embeddings import Embedder
 from app.core.llm.base import BaseLLMClient
-from app.core.pdf_parser import parse_pdf
 from app.db import vector_store
 from app.db.vector_store import SearchResult
 from app.schemas.analysis import AnalysisResult
@@ -38,9 +37,11 @@ async def ingest_document(
     embedder = embedder or Embedder()
 
     logger.info("Ингестия документа «{}» ({} байт)", title, len(file_bytes))
-    parsed = parse_pdf(file_bytes, file_name=file_name or title)
+    parsed = parse_document(file_bytes, file_name=file_name or title)
     logger.info(
-        "Извлечено {} страниц, {} символов", len(parsed.pages), parsed.total_chars
+        "Документ распарсен: формат {}, {} символов",
+        parsed.file_type,
+        parsed.total_chars,
     )
 
     # --- Авто-классификация: определяем год, тип суда, тип документа ---
