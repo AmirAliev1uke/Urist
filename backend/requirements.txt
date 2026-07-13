@@ -15,6 +15,9 @@ pydantic-settings==2.7.1
 # --- PDF parsing ---
 PyMuPDF==1.25.2
 
+# --- DOCX parsing (документы юристов для анализа) ---
+python-docx==1.1.2
+
 # --- Embeddings (локально) ---
 sentence-transformers==3.3.1
 

@@ -1,13 +1,14 @@
 """RAG-оркестрация: связывает парсинг, embeddings, поиск и LLM.
 
 Два основных сценария:
-  - ingest_document: наполнение базы знаний (Поток A)
-  - analyze_document: анализ документа юриста (Поток B)
+  - ingest_document: наполнение базы знаний (Поток A, только PDF)
+  - analyze_document: анализ документа юриста (Поток B, PDF + DOCX)
 """
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.chunker import chunk_document
+from app.core.document_parser import parse_document
 from app.core.embeddings import Embedder
 from app.core.llm.base import BaseLLMClient
 from app.core.pdf_parser import parse_pdf
@@ -103,8 +104,11 @@ async def analyze_document(
     )
 
     logger.info("Анализ документа «{}»", file_name)
-    parsed = parse_pdf(file_bytes, file_name=file_name)
+    parsed = parse_document(file_bytes, file_name=file_name)
     document_text = parsed.full_text
+    logger.info(
+        "Документ распарсен: формат {}, {} символов", parsed.file_type, parsed.total_chars
+    )
 
     # Векторизуем документ целиком (как запрос) для поиска релевантных норм
     query_embedding = embedder.embed_text(document_text[:8000])

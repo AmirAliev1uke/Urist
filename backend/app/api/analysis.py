@@ -15,6 +15,14 @@ router = APIRouter(prefix="/api/analyze", tags=["analysis"])
 
 MAX_PDF_SIZE = 50 * 1024 * 1024  # 50 МБ
 
+# Форматы, которые юристы могут загружать для анализа
+ANALYSIS_ALLOWED_EXTENSIONS = (".pdf", ".docx")
+
+
+def _is_allowed_analysis_file(filename: str) -> bool:
+    """Проверить расширение файла для анализа (PDF или DOCX)."""
+    return filename.lower().endswith(ANALYSIS_ALLOWED_EXTENSIONS)
+
 
 @router.post("", response_model=AnalysisResponse)
 async def analyze_uploaded_document(
@@ -26,8 +34,11 @@ async def analyze_uploaded_document(
     Выполняется синхронно (для MVP). Для больших документов позже добавим
     фоновую очередь (Celery/RQ).
     """
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Ожидается файл PDF.")
+    if not file.filename or not _is_allowed_analysis_file(file.filename):
+        raise HTTPException(
+            status_code=400,
+            detail="Ожидается файл PDF или DOCX для анализа.",
+        )
 
     file_bytes = await file.read()
     if len(file_bytes) == 0:

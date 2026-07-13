@@ -33,7 +33,10 @@ export function DocumentUpload({ onAnalyzed }: Props) {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'application/pdf': ['.pdf'] },
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+    },
     multiple: false,
     disabled: loading,
   })
@@ -58,10 +61,10 @@ export function DocumentUpload({ onAnalyzed }: Props) {
         <input {...getInputProps()} />
         <div className="dz-icon">📄</div>
         <div className="dz-title">
-          Перетащите PDF-документ для анализа
+          Перетащите документ для анализа
         </div>
         <div className="dz-hint">
-          или нажмите для выбора файла · договоры, исковые заявления, проекты законов
+          или нажмите для выбора файла · PDF или DOCX · договоры, иски, проекты
         </div>
       </div>
       {error && (
