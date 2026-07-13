@@ -39,11 +39,15 @@ services:
       RAG_TOP_K: ${RAG_TOP_K:-8}
       RAG_MIN_SIMILARITY: ${RAG_MIN_SIMILARITY:-0.3}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      PROMPT_LOG_DIR: ${PROMPT_LOG_DIR:-logs}
+      PROMPT_LOG_ENABLED: ${PROMPT_LOG_ENABLED:-true}
     ports:
       - "8000:8000"
     volumes:
       # Монтируем код для hot-reload при разработке
       - ./backend:/app
+      # Логи промтов доступны с хоста в ./backend/logs/
+      - ./backend/logs:/app/logs
     depends_on:
       db:
         condition: service_healthy

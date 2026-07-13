@@ -15,6 +15,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config import get_settings
 from app.core.llm.base import BaseLLMClient
+from app.core.prompt_logger import log_prompt
 from app.db.vector_store import SearchResult
 from app.schemas.analysis import AnalysisResult
 
@@ -79,11 +80,42 @@ class GigaChatLLMClient(BaseLLMClient):
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ]
-        response = await asyncio.to_thread(
-            self._client.chat, {"messages": messages, "temperature": 0.2}
-        )
-        raw = response.choices[0].message.content or "{}"
-        logger.debug("[GigaChat] Сырой ответ ({} символов)", len(raw))
+        try:
+            response = await asyncio.to_thread(
+                self._client.chat, {"messages": messages, "temperature": 0.2}
+            )
+            raw = response.choices[0].message.content or "{}"
+            logger.debug("[GigaChat] Сырой ответ ({} символов)", len(raw))
+
+            # --- Логирование промта и ответа в файл ---
+            usage = getattr(response, "usage", None)
+            _log_request(
+                provider=self.provider_name,
+                system_prompt=SYSTEM_PROMPT,
+                user_prompt=user_prompt,
+                context=context,
+                response=raw,
+                file_name=file_name,
+                extra={
+                    "model": settings.gigachat_model,
+                    "temperature": 0.2,
+                    "prompt_tokens": getattr(usage, "prompt_tokens", "?") if usage else "?",
+                    "completion_tokens": getattr(usage, "completion_tokens", "?") if usage else "?",
+                    "total_tokens": getattr(usage, "total_tokens", "?") if usage else "?",
+                },
+            )
+        except Exception as exc:
+            # Логируем упавший запрос тоже — для отладки
+            _log_request(
+                provider=self.provider_name,
+                system_prompt=SYSTEM_PROMPT,
+                user_prompt=user_prompt,
+                context=context,
+                response=None,
+                error=str(exc),
+                file_name=file_name,
+            )
+            raise
 
         data = _extract_json(raw)
         data["llm_provider"] = self.provider_name
@@ -141,6 +173,44 @@ class GigaChatLLMClient(BaseLLMClient):
     {{"quote": "точная цитата из документа для подсветки", "severity": "risk|recommendation|reference|info", "comment": "пояснение"}}
   ]
 }}"""
+
+
+def _log_request(
+    *,
+    provider: str,
+    system_prompt: str,
+    user_prompt: str,
+    context: list[SearchResult],
+    response: str | None,
+    file_name: str | None = None,
+    error: str | None = None,
+    extra: dict | None = None,
+) -> None:
+    """Сериализовать контекст и записать промт+ответ в logs/prompts.log."""
+    from app.config import get_settings
+
+    s = get_settings()
+    if not s.prompt_log_enabled:
+        return
+
+    context_chunks = [
+        {
+            "title": r.document_title,
+            "article_ref": r.article_ref,
+            "similarity": r.similarity,
+        }
+        for r in context
+    ]
+    log_prompt(
+        provider=provider,
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        context_chunks=context_chunks,
+        response=response,
+        error=error,
+        file_name=file_name,
+        extra=extra,
+    )
 
 
 def _extract_json(raw: str) -> dict:

@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     # Server
     cors_origins: str = "http://localhost:5173"
 
+    # Логирование промтов LLM
+    prompt_log_dir: str = "logs"
+    prompt_log_enabled: bool = True
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

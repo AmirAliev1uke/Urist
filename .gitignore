@@ -27,6 +27,9 @@ npm-debug.log*
 # Docker volumes (local data)
 pgdata/
 
+# Prompt logs (промты LLM и ответы — могут содержать чувствительные данные)
+backend/logs/
+
 # OS files
 .DS_Store
 Thumbs.db
