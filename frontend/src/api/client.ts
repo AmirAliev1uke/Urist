@@ -5,7 +5,9 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? ''
 
 export const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 120_000, // анализ может быть долгим
+  // Загрузка больших законов (векторизация на CPU) может занимать много времени.
+  // 10 минут — запас для первого документа.
+  timeout: 600_000,
 })
 
 // --- База знаний (Поток A) ---

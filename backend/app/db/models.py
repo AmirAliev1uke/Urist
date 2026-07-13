@@ -2,13 +2,25 @@
 
 SQLAlchemy-модели отражают структуру, созданную в migrations/init.sql.
 Векторное поле `embedding` объявлено через тип из pgvector.
+
+Важно: колонки объявлены через Column() с явным типом — это надёжнее, чем
+сочетание Mapped[...] + mapped_column(...) при наличии векторного типа.
 """
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import foreign, relationship
 
 from app.config import get_settings
 from app.db.database import Base
@@ -21,18 +33,21 @@ class KnowledgeDocument(Base):
 
     __tablename__ = "knowledge_documents"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str] = mapped_column(Text, nullable=False)
-    doc_type: Mapped[str] = mapped_column(Text, default="other", nullable=False)
-    source_url: Mapped[str | None] = mapped_column(Text)
-    file_name: Mapped[str | None] = mapped_column(Text)
-    total_chunks: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), nullable=False
+    id = Column(Integer, primary_key=True)
+    title = Column(Text, nullable=False)
+    doc_type = Column(Text, nullable=False, default="other")
+    source_url = Column(Text)
+    file_name = Column(Text)
+    total_chunks = Column(Integer, nullable=False, default=0, server_default="0")
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
-    chunks: Mapped[list["DocumentChunk"]] = relationship(
-        back_populates="document", cascade="all, delete-orphan"
+    chunks = relationship(
+        "DocumentChunk",
+        primaryjoin="KnowledgeDocument.id == foreign(DocumentChunk.document_id)",
+        back_populates="document",
+        cascade="all, delete-orphan",
     )
 
 
@@ -41,23 +56,27 @@ class DocumentChunk(Base):
 
     __tablename__ = "document_chunks"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    document_id: Mapped[int] = mapped_column(
-        ForeignKey("knowledge_documents(id)", ondelete="CASCADE"),
+    id = Column(Integer, primary_key=True)
+    document_id = Column(
+        Integer,
+        ForeignKey("knowledge_documents.id", ondelete="CASCADE"),
         nullable=False,
     )
-    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
-    text: Mapped[str] = mapped_column(Text, nullable=False)
-    article_ref: Mapped[str | None] = mapped_column(Text)
-    metadata_: Mapped[dict] = mapped_column(
-        "metadata", JSONB, default=dict, nullable=False
-    )
-    embedding = mapped_column(Vector(settings.embedding_dim), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), nullable=False
+    chunk_index = Column(Integer, nullable=False)
+    text = Column(Text, nullable=False)
+    article_ref = Column(Text)
+    # Имя колонки в БД — "metadata" (зарезервированное слово обходим через явное имя)
+    metadata_ = Column("metadata", JSONB, nullable=False, default=dict)
+    embedding = Column(Vector(settings.embedding_dim), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
-    document: Mapped[KnowledgeDocument] = relationship(back_populates="chunks")
+    document = relationship(
+        "KnowledgeDocument",
+        primaryjoin="foreign(DocumentChunk.document_id) == KnowledgeDocument.id",
+        back_populates="chunks",
+    )
 
     __table_args__ = (UniqueConstraint("document_id", "chunk_index"),)
 
@@ -67,15 +86,13 @@ class Analysis(Base):
 
     __tablename__ = "analyses"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    file_name: Mapped[str] = mapped_column(Text, nullable=False)
-    status: Mapped[str] = mapped_column(
-        String, default="pending", nullable=False
-    )  # pending | completed | failed
-    document_text: Mapped[str | None] = mapped_column(Text)
-    result_json: Mapped[dict | None] = mapped_column(JSONB)
-    error: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), nullable=False
+    id = Column(Integer, primary_key=True)
+    file_name = Column(Text, nullable=False)
+    status = Column(String, nullable=False, default="pending", server_default="pending")
+    document_text = Column(Text)
+    result_json = Column(JSONB)
+    error = Column(Text)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-    completed_at: Mapped[datetime | None] = mapped_column()
+    completed_at = Column(DateTime(timezone=True))
