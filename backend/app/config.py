@@ -17,6 +17,11 @@ class Settings(BaseSettings):
         default="postgresql+asyncpg://legal:legal_password@db:5432/legal_ai"
     )
 
+    # Qdrant (векторная БД)
+    qdrant_url: str = "http://qdrant:6333"
+    qdrant_api_key: str = ""
+    qdrant_collection: str = "legal_chunks"
+
     # LLM provider: stub | gigachat | openai | yandex
     llm_provider: str = "stub"
 

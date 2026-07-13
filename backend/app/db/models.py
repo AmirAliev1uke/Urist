@@ -1,35 +1,28 @@
-"""ORM-модели таблиц.
+"""ORM-модели таблиц PostgreSQL.
 
-SQLAlchemy-модели отражают структуру, созданную в migrations/init.sql.
-Векторное поле `embedding` объявлено через тип из pgvector.
-
-Важно: колонки объявлены через Column() с явным типом — это надёжнее, чем
-сочетание Mapped[...] + mapped_column(...) при наличии векторного типа.
+PostgreSQL хранит только метаданные: источники права (knowledge_documents)
+и результаты анализа (analyses). Векторы и тексты чанков хранятся в Qdrant.
 """
 from datetime import datetime
 
-from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Column,
     DateTime,
-    ForeignKey,
     Integer,
     String,
     Text,
-    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import foreign, relationship
 
-from app.config import get_settings
 from app.db.database import Base
-
-settings = get_settings()
 
 
 class KnowledgeDocument(Base):
-    """Документ-источник права: кодекс, закон, судебная практика."""
+    """Документ-источник права: кодекс, закон, судебная практика.
+
+    Метаданные хранятся здесь, векторы чанков — в Qdrant (связь по document_id).
+    """
 
     __tablename__ = "knowledge_documents"
 
@@ -42,43 +35,6 @@ class KnowledgeDocument(Base):
     created_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-
-    chunks = relationship(
-        "DocumentChunk",
-        primaryjoin="KnowledgeDocument.id == foreign(DocumentChunk.document_id)",
-        back_populates="document",
-        cascade="all, delete-orphan",
-    )
-
-
-class DocumentChunk(Base):
-    """Чанк текста из источника права + его эмбеддинг."""
-
-    __tablename__ = "document_chunks"
-
-    id = Column(Integer, primary_key=True)
-    document_id = Column(
-        Integer,
-        ForeignKey("knowledge_documents.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    chunk_index = Column(Integer, nullable=False)
-    text = Column(Text, nullable=False)
-    article_ref = Column(Text)
-    # Имя колонки в БД — "metadata" (зарезервированное слово обходим через явное имя)
-    metadata_ = Column("metadata", JSONB, nullable=False, default=dict)
-    embedding = Column(Vector(settings.embedding_dim), nullable=False)
-    created_at = Column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
-
-    document = relationship(
-        "KnowledgeDocument",
-        primaryjoin="foreign(DocumentChunk.document_id) == KnowledgeDocument.id",
-        back_populates="chunks",
-    )
-
-    __table_args__ = (UniqueConstraint("document_id", "chunk_index"),)
 
 
 class Analysis(Base):

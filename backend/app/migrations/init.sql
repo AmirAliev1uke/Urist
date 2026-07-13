@@ -1,13 +1,12 @@
 -- ============================================================
---  Начальная инициализация БД Legal AI Assistant
---  Выполняется автоматически при первом запуске контейнера БД
+--  Начальная инициализация БД Legal AI Assistant (PostgreSQL)
+--  PostgreSQL хранит только метаданные. Векторы — в Qdrant.
+--  Выполняется автоматически при первом запуске контейнера БД.
 -- ============================================================
 
--- Расширение pgvector для хранения и поиска по эмбеддингам
-CREATE EXTENSION IF NOT EXISTS vector;
-
 -- ------------------------------------------------------------
---  Источник права в базе знаний (ГК РФ, НК РФ, судебная практика и т.д.)
+--  Источник права (метаданные): ГК РФ, НК РФ, судебная практика
+--  Векторы чанков хранятся в Qdrant, связь по document_id
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS knowledge_documents (
     id            SERIAL PRIMARY KEY,
@@ -19,31 +18,10 @@ CREATE TABLE IF NOT EXISTS knowledge_documents (
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- ------------------------------------------------------------
---  Чанк текста из источника права + его вектор
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS document_chunks (
-    id            SERIAL PRIMARY KEY,
-    document_id   INTEGER NOT NULL REFERENCES knowledge_documents(id) ON DELETE CASCADE,
-    chunk_index   INTEGER NOT NULL,
-    text          TEXT NOT NULL,
-    -- Метаданные для цитирования: номер статьи, раздел и т.п.
-    article_ref   TEXT,
-    metadata      JSONB NOT NULL DEFAULT '{}'::jsonb,
-    embedding     vector(384) NOT NULL,
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (document_id, chunk_index)
-);
-
-CREATE INDEX IF NOT EXISTS idx_chunks_document_id
-    ON document_chunks(document_id);
-
--- Приближённый поиск ближайших соседей (HNSW) для быстрого similarity search.
--- cosine_distance = 1 - косинусное сходство.
-CREATE INDEX IF NOT EXISTS idx_chunks_embedding_hnsw
-    ON document_chunks
-    USING hnsw (embedding vector_cosine_ops)
-    WITH (m = 16, ef_construction = 64);
+CREATE INDEX IF NOT EXISTS idx_knowledge_doc_type
+    ON knowledge_documents(doc_type);
+CREATE INDEX IF NOT EXISTS idx_knowledge_created_at
+    ON knowledge_documents(created_at DESC);
 
 -- ------------------------------------------------------------
 --  Результаты анализа загруженных юристом документов

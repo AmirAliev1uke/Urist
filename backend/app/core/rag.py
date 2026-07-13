@@ -1,13 +1,16 @@
-"""RAG-оркестрация: связывает парсинг, embeddings, поиск и LLM.
+"""RAG-оркестрация: связывает парсинг, классификацию, embeddings, поиск и LLM.
 
 Два основных сценария:
   - ingest_document: наполнение базы знаний (Поток A, только PDF)
+    PDF → парсинг → авто-классификация → чанкование → embedding → Qdrant
   - analyze_document: анализ документа юриста (Поток B, PDF + DOCX)
+    документ → embedding запроса → поиск в Qdrant → промпт → LLM → отчёт
 """
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.chunker import chunk_document
+from app.core.classifier import extract_metadata
 from app.core.document_parser import parse_document
 from app.core.embeddings import Embedder
 from app.core.llm.base import BaseLLMClient
@@ -26,16 +29,31 @@ async def ingest_document(
     source_url: str | None = None,
     file_name: str | None = None,
     embedder: Embedder | None = None,
-) -> int:
-    """Поток A: распарсить PDF, чанковать, векторизовать и сохранить в БД.
+) -> dict:
+    """Поток A: распарсить PDF, авто-классифицировать, чанковать, векторизовать.
 
-    Возвращает количество сохранённых чанков.
+    Возвращает словарь с метаданными и количеством чанков:
+      {chunks, doc_type, year, court_level, case_number}
     """
     embedder = embedder or Embedder()
 
     logger.info("Ингестия документа «{}» ({} байт)", title, len(file_bytes))
     parsed = parse_pdf(file_bytes, file_name=file_name or title)
-    logger.info("Извлечено {} страниц, {} символов", len(parsed.pages), parsed.total_chars)
+    logger.info(
+        "Извлечено {} страниц, {} символов", len(parsed.pages), parsed.total_chars
+    )
+
+    # --- Авто-классификация: определяем год, тип суда, тип документа ---
+    metadata = extract_metadata(parsed.full_text, file_name or title)
+    logger.info(
+        "Классификация: doc_type={}, year={}, court={}, case={}",
+        metadata.doc_type,
+        metadata.year,
+        metadata.court_level,
+        metadata.case_number,
+    )
+    # Классификатор может точнее определить doc_type — используем его
+    doc_type = metadata.doc_type if metadata.doc_type != "other" else doc_type
 
     chunks = chunk_document(parsed.full_text)
     logger.info("Получено {} чанков", len(chunks))
@@ -51,20 +69,48 @@ async def ingest_document(
             "text": c.text,
             "embedding": emb,
             "article_ref": c.article_ref,
-            "metadata": c.metadata or {},
         }
         for c, emb in zip(chunks, embeddings, strict=True)
     ]
 
+    # Метаданные документа для Qdrant (year, court_level и т.д.)
+    doc_meta = {
+        "doc_type": doc_type,
+        "year": metadata.year,
+        "court_level": metadata.court_level,
+        "case_number": metadata.case_number,
+        "source_title": title,
+    }
+
     doc = await vector_store.create_document(
-        session, title=title, doc_type=doc_type, source_url=source_url, file_name=file_name
+        session,
+        title=title,
+        doc_type=doc_type,
+        source_url=source_url,
+        file_name=file_name,
     )
     saved = await vector_store.add_chunks(
-        session, document_id=doc.id, chunks=payload
+        session,
+        document_id=doc.id,
+        chunks=payload,
+        metadata=doc_meta,
     )
     await session.commit()
-    logger.info("Сохранено {} чанков для документа id={}", saved, doc.id)
-    return saved
+    logger.info(
+        "Сохранено {} чанков для документа id={} (year={}, court={})",
+        saved,
+        doc.id,
+        metadata.year,
+        metadata.court_level,
+    )
+    return {
+        "chunks": saved,
+        "doc_type": doc_type,
+        "year": metadata.year,
+        "court_level": metadata.court_level,
+        "case_number": metadata.case_number,
+        "document_id": doc.id,
+    }
 
 
 async def retrieve_context(
@@ -73,13 +119,21 @@ async def retrieve_context(
     query_embedding: list[float],
     top_k: int,
     min_similarity: float,
+    year_from: int | None = None,
+    year_to: int | None = None,
+    court_level: str | None = None,
+    doc_type: str | None = None,
 ) -> list[SearchResult]:
-    """Найти top_k релевантных норм для данного вектора запроса."""
+    """Найти top_k релевантных норм в Qdrant с опциональной фильтрацией."""
     return await vector_store.similarity_search(
         session,
         query_embedding=query_embedding,
         top_k=top_k,
         min_similarity=min_similarity,
+        year_from=year_from,
+        year_to=year_to,
+        court_level=court_level,
+        doc_type=doc_type,
     )
 
 

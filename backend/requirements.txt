@@ -3,10 +3,12 @@ fastapi==0.115.6
 uvicorn[standard]==0.34.0
 python-multipart==0.0.20
 
-# --- Database ---
+# --- Database (PostgreSQL — метаданные) ---
 sqlalchemy[asyncio]==2.0.36
 asyncpg==0.30.0
-pgvector==0.3.6
+
+# --- Vector DB (Qdrant — векторы и тексты чанков) ---
+qdrant-client>=1.12.0
 
 # --- Settings ---
 pydantic==2.10.4

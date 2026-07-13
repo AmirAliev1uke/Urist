@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.db.database import get_session
+from app.db.vector_store import count_chunks
 
 router = APIRouter(tags=["health"])
 
@@ -17,22 +18,28 @@ async def health() -> dict:
 
 @router.get("/health/db")
 async def health_db(session: AsyncSession = Depends(get_session)) -> dict:
-    """Проверка связи с БД и расширением pgvector."""
+    """Проверка связи с PostgreSQL и Qdrant."""
+    # PostgreSQL
     try:
-        # Проверяем, что pgvector доступен
-        version = (
-            await session.execute(text("SELECT extversion FROM pg_extension WHERE extname='vector'"))
+        pg_ok = (await session.execute(text("SELECT 1"))).scalar()
+        docs_count = (
+            await session.execute(text("SELECT count(*) FROM knowledge_documents"))
         ).scalar()
-        chunks_count = (
-            await session.execute(text("SELECT count(*) FROM document_chunks"))
+        analyses_count = (
+            await session.execute(text("SELECT count(*) FROM analyses"))
         ).scalar()
-        return {
-            "status": "ok",
-            "pgvector_version": version,
-            "total_chunks": chunks_count,
-        }
+        pg_status = {"status": "ok", "select_1": pg_ok, "documents": docs_count, "analyses": analyses_count}
     except Exception as exc:  # noqa: BLE001
-        return {"status": "error", "detail": str(exc)}
+        pg_status = {"status": "error", "detail": str(exc)}
+
+    # Qdrant
+    try:
+        chunks = await count_chunks()
+        qdrant_status = {"status": "ok", "total_chunks": chunks}
+    except Exception as exc:  # noqa: BLE001
+        qdrant_status = {"status": "error", "detail": str(exc)}
+
+    return {"postgres": pg_status, "qdrant": qdrant_status}
 
 
 @router.get("/config")
@@ -45,4 +52,6 @@ async def config_info() -> dict:
         "embedding_dim": s.embedding_dim,
         "rag_top_k": s.rag_top_k,
         "rag_min_similarity": s.rag_min_similarity,
+        "qdrant_url": s.qdrant_url,
+        "qdrant_collection": s.qdrant_collection,
     }

@@ -56,7 +56,7 @@ async def upload_knowledge_pdf(
         )
 
     try:
-        saved = await ingest_document(
+        result = await ingest_document(
             session,
             file_bytes=file_bytes,
             title=title,
@@ -70,8 +70,19 @@ async def upload_knowledge_pdf(
 
     return {
         "status": "ok",
-        "message": f"Документ «{title}» загружен, проиндексировано чанков: {saved}",
-        "chunks": saved,
+        "message": (
+            f"Документ «{title}» загружен, проиндексировано чанков: {result['chunks']}. "
+            f"Авто-классификация: тип={result['doc_type']}, "
+            f"год={result.get('year')}, суд={result.get('court_level')}"
+        ),
+        "chunks": result["chunks"],
+        "classification": {
+            "doc_type": result["doc_type"],
+            "year": result.get("year"),
+            "court_level": result.get("court_level"),
+            "case_number": result.get("case_number"),
+        },
+        "document_id": result["document_id"],
     }
 
 
