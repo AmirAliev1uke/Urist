@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Legal AI Assistant</title>
+
+  <!-- Office.js API (CDN) -->
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --bg-panel: #ffffff;
+      --bg-panel-2: #f1f5f9;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-dim: #64748b;
+      --accent: #3b82f6;
+      --accent-2: #6366f1;
+      --risk: #dc2626;
+      --warn: #d97706;
+      --ok: #059669;
+      --reference: #7c3aed;
+      --risk-bg: #fef2f2;
+      --warn-bg: #fffbeb;
+      --ok-bg: #ecfdf5;
+      --reference-bg: #f5f3ff;
+      --info-bg: #eff6ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      color: white;
+      padding: 12px 16px;
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .content { padding: 14px 16px; }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 9px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      flex: 1;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: var(--accent-2); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      background: var(--bg-panel-2);
+      color: var(--text);
+      flex: 0 0 auto;
+    }
+    .btn-secondary:hover { background: var(--border); }
+
+    .loading {
+      display: none;
+      align-items: center;
+      padding: 30px 10px;
+      color: var(--text-dim);
+    }
+    .loading.active { display: flex; }
+    .spinner {
+      width: 22px; height: 22px;
+      border: 2.5px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .result { display: none; }
+    .result.active { display: block; }
+
+    .empty {
+      text-align: center;
+      color: var(--text-dim);
+      padding: 30px 10px;
+    }
+
+    .section { margin-bottom: 18px; }
+    .section h3 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--text-dim);
+      margin: 0 0 8px;
+    }
+
+    .summary-box {
+      background: var(--info-bg);
+      border-left: 3px solid var(--accent);
+      padding: 11px 13px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border-left: 3px solid var(--border);
+      cursor: pointer;
+      transition: box-shadow 0.15s;
+    }
+    .card:hover { box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .card-risk-high { border-left-color: var(--risk); }
+    .card-risk-medium { border-left-color: var(--warn); }
+    .card-risk-low { border-left-color: var(--ok); }
+    .card-compliance { border-left-color: var(--ok); }
+    .card-missing_clause { border-left-color: var(--warn); }
+    .card-risk { border-left-color: var(--risk); }
+    .card-wording { border-left-color: var(--accent); }
+    .card-general { border-left-color: var(--accent); }
+
+    .card-title { font-weight: 600; margin-bottom: 4px; }
+    .card-meta { font-size: 11px; color: var(--text-dim); }
+    .card-hint { color: var(--accent); font-size: 11px; }
+
+    .badge {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-left: 5px;
+    }
+    .badge-risk-high { background: var(--risk-bg); color: var(--risk); }
+    .badge-risk-medium { background: var(--warn-bg); color: var(--warn); }
+    .badge-risk-low { background: var(--ok-bg); color: var(--ok); }
+
+    .ref-item {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 7px;
+      cursor: pointer;
+    }
+    .ref-item:hover { background: var(--bg-panel-2); }
+    .ref-title { font-weight: 600; font-size: 13px; }
+    .ref-sim { float: right; color: var(--text-dim); font-size: 11px; }
+    .ref-quote { color: var(--text-dim); font-size: 12px; margin-top: 4px; }
+    .sim-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+    .sim-fill { height: 100%; background: var(--accent); }
+
+    .error-msg {
+      background: var(--risk-bg);
+      color: var(--risk);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      display: none;
+    }
+    .error-msg.active { display: block; }
+
+    /* Модальное окно нормы */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      padding: 16px;
+    }
+    .modal-overlay.active { display: flex; align-items: center; justify-content: center; }
+    .modal {
+      background: white;
+      border-radius: 8px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-title { font-weight: 600; font-size: 14px; }
+    .modal-meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+    .modal-close {
+      background: none; border: none; font-size: 18px;
+      color: var(--text-dim); cursor: pointer; line-height: 1;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 14px 16px; overflow-y: auto; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div class="header">⚖️ Legal AI Assistant</div>
+
+  <div class="content">
+    <div class="actions">
+      <button id="analyze-btn" class="btn">🔍 Анализировать документ</button>
+      <button id="clear-btn" class="btn btn-secondary" title="Снять подсветку">↺</button>
+    </div>
+
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <div>
+        <div style="font-weight:500;margin-bottom:2px;">Анализ документа…</div>
+        <div style="font-size:11px;">Извлечение текста, поиск норм, запрос к ИИ</div>
+      </div>
+    </div>
+
+    <div id="error" class="error-msg"></div>
+
+    <div id="empty-state" class="empty">
+      Нажмите «Анализировать», чтобы проверить документ на основе норм права РФ.
+    </div>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <!-- Модальное окно для просмотра нормы -->
+  <div id="ref-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div id="modal-title" class="modal-title"></div>
+          <div id="modal-meta" class="modal-meta"></div>
+        </div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="taskpane.js"></script>
+</body>
+</html>

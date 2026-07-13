@@ -1,8 +1,10 @@
 """Точка входа FastAPI-приложения Legal AI Assistant."""
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from app.api import analysis, health, knowledge
@@ -48,6 +50,14 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(knowledge.router)
 app.include_router(analysis.router)
+
+# Раздача статики надстройки Word (taskpane.html и ресурсы)
+_addin_dir = os.path.join(os.path.dirname(__file__), "..", "word-addin")
+if not os.path.isdir(_addin_dir):
+    _addin_dir = "/app/word-addin"
+if os.path.isdir(_addin_dir):
+    app.mount("/addin", StaticFiles(directory=_addin_dir, html=True), name="addin")
+    logger.info("Надстройка Word доступна на /addin/taskpane.html")
 
 
 @app.get("/")

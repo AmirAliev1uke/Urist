@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OfficeApp
+    xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+    xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+    xsi:type="TaskPaneApp">
+
+  <!-- ============================================================
+       Манифест надстройки Legal AI Assistant для Microsoft Word.
+       Для локальной разработки SourceLocation указывает на localhost:8000.
+       Для сетевого развёртывания замените http://localhost:8000
+       на адрес вашего сервера (потребуется HTTPS).
+  ============================================================ -->
+
+  <Id>8f3a7d2e-1b5c-4e6a-9d8f-2c1b3e4f5a6b</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Legal AI</ProviderName>
+  <DefaultLocale>ru-RU</DefaultLocale>
+  <DisplayName DefaultValue="Legal AI Assistant" />
+  <Description DefaultValue="Анализ юридических документов на основе норм права РФ (ГК РФ, НК РФ, судебная практика) с помощью ИИ." />
+  <SupportUrl DefaultValue="http://localhost:8000" />
+
+  <AppDomains>
+    <AppDomain>http://localhost:8000</AppDomain>
+  </AppDomains>
+
+  <!-- Хост: Word -->
+  <Hosts>
+    <Host Name="Document" />
+  </Hosts>
+
+  <DefaultSettings>
+    <SourceLocation DefaultValue="http://localhost:8000/addin/taskpane.html" />
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="LegalAI.GetStarted.Title" />
+            <Description resid="LegalAI.GetStarted.Description" />
+            <LearnMoreUrl resid="LegalAI.GetStarted.LearnMoreUrl" />
+          </GetStarted>
+
+          <!-- Команды функций -->
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="LegalAI.Group">
+                <Label resid="LegalAI.GroupLabel" />
+                <Icon>
+                  <bt:Image size="16" resid="LegalAI.ButtonIcon16" />
+                  <bt:Image size="32" resid="LegalAI.ButtonIcon32" />
+                  <bt:Image size="80" resid="LegalAI.ButtonIcon80" />
+                </Icon>
+                <Control xsi:type="Button" id="LegalAI.OpenTaskpane">
+                  <Label resid="LegalAI.ButtonLabel" />
+                  <Supertip>
+                    <Title resid="LegalAI.ButtonLabel" />
+                    <Description resid="LegalAI.ButtonTooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="LegalAI.ButtonIcon16" />
+                    <bt:Image size="32" resid="LegalAI.ButtonIcon32" />
+                    <bt:Image size="80" resid="LegalAI.ButtonIcon80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>LegalAI.Taskpane</TaskpaneId>
+                    <SourceLocation resid="LegalAI.Taskpane.Url" />
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+
+        </DesktopFormFactor>
+      </Host>
+
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="LegalAI.ButtonIcon16" DefaultValue="http://localhost:8000/addin/assets/icon-16.png" />
+        <bt:Image id="LegalAI.ButtonIcon32" DefaultValue="http://localhost:8000/addin/assets/icon-32.png" />
+        <bt:Image id="LegalAI.ButtonIcon80" DefaultValue="http://localhost:8000/addin/assets/icon-80.png" />
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="LegalAI.Taskpane.Url" DefaultValue="http://localhost:8000/addin/taskpane.html" />
+        <bt:Url id="LegalAI.GetStarted.LearnMoreUrl" DefaultValue="http://localhost:8000" />
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="LegalAI.GroupLabel" DefaultValue="Legal AI" />
+        <bt:String id="LegalAI.ButtonLabel" DefaultValue="Анализ" />
+        <bt:String id="LegalAI.GetStarted.Title" DefaultValue="Legal AI Assistant" />
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="LegalAI.ButtonTooltip" DefaultValue="Анализ документа на основе норм права РФ с помощью ИИ" />
+        <bt:String id="LegalAI.GetStarted.Description" DefaultValue="Анализ юридических документов с опорой на ГК РФ, НК РФ и судебную практику." />
+      </bt:LongStrings>
+    </Resources>
+
+  </VersionOverrides>
+</OfficeApp>

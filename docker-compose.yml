@@ -67,6 +67,8 @@ services:
       - ./backend:/app
       # Логи промтов доступны с хоста в ./backend/logs/
       - ./backend/logs:/app/logs
+      # Файлы надстройки Word для раздачи через /addin
+      - ./word-addin:/app/word-addin:ro
     depends_on:
       db:
         condition: service_healthy

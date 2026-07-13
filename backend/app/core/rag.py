@@ -148,10 +148,67 @@ async def analyze_document(
     top_k: int | None = None,
     min_similarity: float | None = None,
 ) -> tuple[AnalysisResult, str]:
-    """Поток B: распарсить документ, найти контекст, вызвать LLM на анализ.
+    """Поток B (из файла): распарсить документ, найти контекст, вызвать LLM.
 
     Возвращает кортеж (результат_анализа, полный_текст_документа).
-    Полный текст нужен фронту для показа с подсветкой.
+    """
+    logger.info("Анализ документа «{}»", file_name)
+    parsed = parse_document(file_bytes, file_name=file_name)
+    document_text = parsed.full_text
+    logger.info(
+        "Документ распарсен: формат {}, {} символов", parsed.file_type, parsed.total_chars
+    )
+    return await _run_analysis(
+        session,
+        document_text=document_text,
+        file_name=file_name,
+        llm_client=llm_client,
+        embedder=embedder,
+        top_k=top_k,
+        min_similarity=min_similarity,
+    )
+
+
+async def analyze_text(
+    session: AsyncSession,
+    *,
+    document_text: str,
+    file_name: str,
+    llm_client: BaseLLMClient,
+    embedder: Embedder | None = None,
+    top_k: int | None = None,
+    min_similarity: float | None = None,
+) -> tuple[AnalysisResult, str]:
+    """Поток B (из текста): анализ готового текста без парсинга файла.
+
+    Используется надстройкой Word — текст берётся через Office.js
+    из открытого документа, без загрузки файла.
+    """
+    logger.info("Анализ текста «{}» ({} символов)", file_name, len(document_text))
+    return await _run_analysis(
+        session,
+        document_text=document_text,
+        file_name=file_name,
+        llm_client=llm_client,
+        embedder=embedder,
+        top_k=top_k,
+        min_similarity=min_similarity,
+    )
+
+
+async def _run_analysis(
+    session: AsyncSession,
+    *,
+    document_text: str,
+    file_name: str,
+    llm_client: BaseLLMClient,
+    embedder: Embedder | None = None,
+    top_k: int | None = None,
+    min_similarity: float | None = None,
+) -> tuple[AnalysisResult, str]:
+    """Общая логика анализа: embedding → поиск в Qdrant → LLM.
+
+    Используется и файловым, и текстовым путями.
     """
     from app.config import get_settings
 
@@ -160,13 +217,6 @@ async def analyze_document(
     top_k = top_k if top_k is not None else settings.rag_top_k
     min_similarity = (
         min_similarity if min_similarity is not None else settings.rag_min_similarity
-    )
-
-    logger.info("Анализ документа «{}»", file_name)
-    parsed = parse_document(file_bytes, file_name=file_name)
-    document_text = parsed.full_text
-    logger.info(
-        "Документ распарсен: формат {}, {} символов", parsed.file_type, parsed.total_chars
     )
 
     # Векторизуем документ целиком (как запрос) для поиска релевантных норм

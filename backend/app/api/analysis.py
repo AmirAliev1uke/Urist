@@ -2,11 +2,12 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.embeddings import get_embedder
 from app.core.llm.factory import get_llm_client
-from app.core.rag import analyze_document
+from app.core.rag import analyze_document, analyze_text
 from app.db.database import get_session
 from app.db.models import Analysis
 from app.schemas.analysis import AnalysisResponse, AnalysisResult
@@ -116,3 +117,71 @@ async def get_analysis(
         error=record.error,
         created_at=record.created_at.isoformat(),
     )
+
+
+# ------------------------------------------------------------
+#  Анализ текста напрямую (без файла) — для надстройки Word
+# ------------------------------------------------------------
+
+
+class AnalyzeTextRequest(BaseModel):
+    """Запрос на анализ готового текста (от надстройки Word)."""
+
+    text: str
+    file_name: str = "document.docx"
+
+
+@router.post("/text", response_model=AnalysisResponse)
+async def analyze_text_endpoint(
+    payload: AnalyzeTextRequest,
+    session: AsyncSession = Depends(get_session),
+) -> AnalysisResponse:
+    """Проанализировать готовый текст (без загрузки файла).
+
+    Используется надстройкой Word: текст берётся из открытого документа
+    через Office.js и отправляется сюда.
+    """
+    if not payload.text.strip():
+        raise HTTPException(status_code=400, detail="Текст документа пуст.")
+    if len(payload.text) > 1_000_000:
+        raise HTTPException(
+            status_code=413, detail="Документ слишком большой (макс. 1М символов)."
+        )
+
+    record = Analysis(file_name=payload.file_name, status="pending")
+    session.add(record)
+    await session.commit()
+    await session.refresh(record)
+
+    try:
+        result, document_text = await analyze_text(
+            session,
+            document_text=payload.text,
+            file_name=payload.file_name,
+            llm_client=get_llm_client(),
+            embedder=get_embedder(),
+        )
+        record.status = "completed"
+        record.result_json = result.model_dump()
+        record.document_text = document_text
+        record.completed_at = datetime.now(timezone.utc)
+        await session.commit()
+        return AnalysisResponse(
+            id=record.id,
+            file_name=record.file_name,
+            status=record.status,
+            result=result,
+            document_text=document_text,
+            error=None,
+            created_at=record.created_at.isoformat(),
+        )
+    except ValueError as exc:
+        record.status = "failed"
+        record.error = str(exc)
+        await session.commit()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        record.status = "failed"
+        record.error = f"Внутренняя ошибка: {exc}"
+        await session.commit()
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
