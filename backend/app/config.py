@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     # GigaChat
     gigachat_api_key: str = ""
     gigachat_scope: str = "GIGACHAT_API_PERS"
+    gigachat_model: str = "GigaChat-2"  # GigaChat | GigaChat-2 | GigaChat-2-Pro | GigaChat-2-Max
 
     # OpenAI
     openai_api_key: str = ""
