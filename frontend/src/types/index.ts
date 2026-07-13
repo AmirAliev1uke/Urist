@@ -27,6 +27,7 @@ export interface LegalReference {
 export interface Recommendation {
   text: string
   category: RecommendationCategory
+  quote?: string | null
   references: LegalReference[]
 }
 

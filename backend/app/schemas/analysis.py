@@ -34,6 +34,9 @@ class Recommendation(BaseModel):
         "general",
         description="compliance | risk | missing_clause | wording | general",
     )
+    quote: str | None = Field(
+        None, description="Точная цитата из документа, к которой относится рекомендация"
+    )
     references: list[LegalReference] = Field(default_factory=list)
 
 

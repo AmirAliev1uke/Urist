@@ -54,21 +54,10 @@ class StubLLMClient(BaseLLMClient):
                     "Сейчас работает stub-заглушка."
                 ),
                 category="general",
+                quote=None,
                 references=[],
             )
         ]
-        if references:
-            recommendations.append(
-                Recommendation(
-                    text=(
-                        "Обратите внимание на найденные нормы права — они "
-                        "наиболее релевантны загруженному документу. "
-                        "Сверьте формулировки с этими источниками."
-                    ),
-                    category="compliance",
-                    references=references[:3],
-                )
-            )
 
         risks: list[Risk] = [
             Risk(
@@ -81,17 +70,8 @@ class StubLLMClient(BaseLLMClient):
             )
         ]
 
+        # В stub-режиме подсветок нет (только реальные риски/рекомендации подсвечиваются)
         highlights: list[HighlightSpan] = []
-        # Попробуем подсветить первые строки документа как демонстрацию
-        first_paragraph = document_text.strip().split("\n")[0][:160]
-        if first_paragraph:
-            highlights.append(
-                HighlightSpan(
-                    quote=first_paragraph,
-                    severity="info",
-                    comment="Демо-подсветка (stub-режим)",
-                )
-            )
 
         return AnalysisResult(
             summary=(
