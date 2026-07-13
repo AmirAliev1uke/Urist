@@ -147,8 +147,12 @@ async def analyze_document(
     embedder: Embedder | None = None,
     top_k: int | None = None,
     min_similarity: float | None = None,
-) -> AnalysisResult:
-    """Поток B: распарсить документ, найти контекст, вызвать LLM на анализ."""
+) -> tuple[AnalysisResult, str]:
+    """Поток B: распарсить документ, найти контекст, вызвать LLM на анализ.
+
+    Возвращает кортеж (результат_анализа, полный_текст_документа).
+    Полный текст нужен фронту для показа с подсветкой.
+    """
     from app.config import get_settings
 
     settings = get_settings()
@@ -182,4 +186,4 @@ async def analyze_document(
         file_name=file_name,
         context=context,
     )
-    return result
+    return result, document_text

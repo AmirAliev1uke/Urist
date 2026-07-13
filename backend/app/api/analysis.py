@@ -56,7 +56,7 @@ async def analyze_uploaded_document(
     await session.refresh(record)
 
     try:
-        result: AnalysisResult = await analyze_document(
+        result, document_text = await analyze_document(
             session,
             file_bytes=file_bytes,
             file_name=file.filename,
@@ -65,6 +65,7 @@ async def analyze_uploaded_document(
         )
         record.status = "completed"
         record.result_json = result.model_dump()
+        record.document_text = document_text
         record.completed_at = datetime.now(timezone.utc)
         await session.commit()
         return AnalysisResponse(
@@ -72,6 +73,7 @@ async def analyze_uploaded_document(
             file_name=record.file_name,
             status=record.status,
             result=result,
+            document_text=document_text,
             error=None,
             created_at=record.created_at.isoformat(),
         )
@@ -110,6 +112,7 @@ async def get_analysis(
         file_name=record.file_name,
         status=record.status,
         result=result,
+        document_text=record.document_text,
         error=record.error,
         created_at=record.created_at.isoformat(),
     )

@@ -66,5 +66,8 @@ class AnalysisResponse(BaseModel):
     file_name: str
     status: str
     result: AnalysisResult | None = None
+    document_text: str | None = Field(
+        None, description="Полный текст документа для показа с подсветкой"
+    )
     error: str | None = None
     created_at: str

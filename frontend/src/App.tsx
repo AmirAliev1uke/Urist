@@ -41,7 +41,7 @@ export default function App() {
           analysis?.result ? (
             <div className="split">
               <DocumentViewer
-                text={analysis.result.highlights.length ? analysis.result.highlights[0].quote : ''}
+                text={analysis.document_text || ''}
                 highlights={analysis.result.highlights}
                 fileName={analysis.file_name}
               />

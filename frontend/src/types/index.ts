@@ -50,6 +50,7 @@ export interface AnalysisResponse {
   file_name: string
   status: 'pending' | 'completed' | 'failed'
   result: AnalysisResult | null
+  document_text: string | null
   error: string | null
   created_at: string
 }
