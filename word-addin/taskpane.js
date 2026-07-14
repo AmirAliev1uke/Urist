@@ -103,56 +103,12 @@ async function analyzeDocument() {
 // ------------------------------------------------------------
 
 function getDocumentText() {
-  // Common API (работает во всех версиях Word, в т.ч. Word 2024).
-  // Используем document.file.getSliceAsync — надёжный способ получить текст.
-  return new Promise((resolve, reject) => {
-    Office.context.document.getFileAsync(
-      Office.FileType.Text,
-      { sliceSize: 65536 },
-      (asyncResult) => {
-        if (asyncResult.status === Office.AsyncResultStatus.Failed) {
-          reject(
-            new Error(
-              "Не удалось получить текст документа: " +
-                (asyncResult.error ? asyncResult.error.message : "неизвестная ошибка")
-            )
-          );
-          return;
-        }
-        const file = asyncResult.value;
-        const sliceCount = file.sliceCount;
-        const slices = [];
-        let received = 0;
-
-        if (sliceCount === 0) {
-          file.closeAsync();
-          resolve("");
-          return;
-        }
-
-        for (let i = 0; i < sliceCount; i++) {
-          file.getSliceAsync(i, { asyncContext: { index: i } }, (sliceResult) => {
-            if (sliceResult.status === Office.AsyncResultStatus.Failed) {
-              reject(
-                new Error(
-                  "Ошибка чтения документа: " +
-                    (sliceResult.error ? sliceResult.error.message : "slice error")
-                )
-              );
-              return;
-            }
-            // sliceResult.value — Uint8Array с текстом в UTF-8
-            const text = new TextDecoder("utf-8").decode(sliceResult.value);
-            slices[sliceResult.asyncContext.index] = text;
-            received++;
-            if (received === sliceCount) {
-              file.closeAsync();
-              resolve(slices.join(""));
-            }
-          });
-        }
-      }
-    );
+  // Канонический способ Word.js: загрузка body.text через Word.run + context.sync.
+  // Это самый надёжный метод для документов Word любого размера.
+  return Word.run((context) => {
+    const body = context.document.body;
+    body.load("text");
+    return context.sync().then(() => body.text);
   });
 }
 
