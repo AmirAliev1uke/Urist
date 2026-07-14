@@ -41,3 +41,6 @@ Thumbs.db
 
 # Build artifacts
 *.tsbuildinfo
+# HuggingFace cache (embedding model — скачивается автоматически)
+backend/.hf_cache/
+backend/logs/
