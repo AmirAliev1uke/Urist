@@ -37,12 +37,23 @@ export interface Risk {
   quote: string | null
 }
 
+export interface CaseLaw {
+  case_number: string
+  court: string
+  date: string
+  subject: string
+  ruling: string
+  relevance: string
+  needs_verification: boolean
+}
+
 export interface AnalysisResult {
   summary: string
   recommendations: Recommendation[]
   risks: Risk[]
   highlights: HighlightSpan[]
   references: LegalReference[]
+  case_law: CaseLaw[]
   llm_provider: string
 }
 

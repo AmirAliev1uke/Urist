@@ -10,6 +10,7 @@ interface Props {
 export function DocumentUpload({ onAnalyzed }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [userQuery, setUserQuery] = useState('')
 
   const onDrop = useCallback(
     async (files: File[]) => {
@@ -18,7 +19,7 @@ export function DocumentUpload({ onAnalyzed }: Props) {
       setLoading(true)
       setError(null)
       try {
-        const result = await analyzeDocument(file)
+        const result = await analyzeDocument(file, userQuery)
         onAnalyzed(result)
       } catch (e: unknown) {
         const msg =
@@ -28,7 +29,7 @@ export function DocumentUpload({ onAnalyzed }: Props) {
         setLoading(false)
       }
     },
-    [onAnalyzed],
+    [onAnalyzed, userQuery],
   )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -68,6 +69,19 @@ export function DocumentUpload({ onAnalyzed }: Props) {
           или нажмите для выбора файла · PDF / DOCX / DOC · договоры, иски, проекты
         </div>
       </div>
+
+      <div style={{ marginTop: 20 }}>
+        <label style={{ display: 'block', fontSize: 13, color: 'var(--text-dim)', marginBottom: 6 }}>
+          Дополнительные указания для ИИ (необязательно)
+        </label>
+        <textarea
+          className="user-query-field"
+          placeholder="Например: обратить внимание на порядок расторжения, проверить штрафные санкции, сравнить с типовыми условиями аренды…"
+          value={userQuery}
+          onChange={(e) => setUserQuery(e.target.value)}
+        />
+      </div>
+
       {error && (
         <div style={{ marginTop: 16, color: 'var(--risk)', fontSize: 14 }}>
           ⚠ {error}

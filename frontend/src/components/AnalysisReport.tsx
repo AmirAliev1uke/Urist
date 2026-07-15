@@ -128,6 +128,42 @@ export function AnalysisReport({ result, onRiskClick, onRecommendationClick }: P
         </div>
       )}
 
+      {/* Судебная практика от ИИ */}
+      {result.case_law && result.case_law.length > 0 && (
+        <div className="report-section">
+          <h3>Судебная практика ({result.case_law.length})</h3>
+          <div className="warning-box">
+            ⚠ Судебная практика предоставлена ИИ. Реквизиты дел требуют проверки
+            по официальным источникам (sudact.ru, kad.arbitr.ru).
+          </div>
+          {result.case_law.map((c, i) => (
+            <div key={i} className="card card-caselaw">
+              <div className="card-title">
+                {c.court || 'Суд не указан'}
+                {c.case_number ? ` · ${c.case_number}` : ''}
+                {c.date ? ` · ${c.date}` : ''}
+                {c.needs_verification && (
+                  <span className="badge badge-warn">требует проверки</span>
+                )}
+              </div>
+              <div className="card-meta" style={{ marginTop: 6 }}>
+                <strong>Суть:</strong> {c.subject}
+              </div>
+              {c.ruling && (
+                <div className="card-meta" style={{ marginTop: 4 }}>
+                  <strong>Вывод суда:</strong> {c.ruling}
+                </div>
+              )}
+              {c.relevance && (
+                <div className="card-meta" style={{ marginTop: 4 }}>
+                  <strong>Релевантность:</strong> {c.relevance}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       <ReferenceModal reference={openRef} onClose={() => setOpenRef(null)} />
     </div>
   )

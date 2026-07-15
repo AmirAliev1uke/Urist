@@ -48,6 +48,21 @@ class Risk(BaseModel):
     quote: str | None = Field(None, description="Фрагмент документа, где найден риск")
 
 
+class CaseLaw(BaseModel):
+    """Судебная практика, найденная моделью (требует проверки пользователем)."""
+
+    case_number: str = Field("", description="Номер дела, если известен")
+    court: str = Field("", description="Наименование суда")
+    date: str = Field("", description="Дата решения")
+    subject: str = Field(..., description="Суть дела")
+    ruling: str = Field("", description="Суть судебного акта / вывод суда")
+    relevance: str = Field("", description="Почему это дело релевантно анализируемому документу")
+    needs_verification: bool = Field(
+        True,
+        description="True — модель не уверена в реквизитах, требуется проверка по официальным источникам",
+    )
+
+
 class AnalysisResult(BaseModel):
     """Полный результат анализа документа."""
 
@@ -58,6 +73,10 @@ class AnalysisResult(BaseModel):
     references: list[LegalReference] = Field(
         default_factory=list,
         description="Все релевантные нормы, использованные для анализа",
+    )
+    case_law: list[CaseLaw] = Field(
+        default_factory=list,
+        description="Судебная практика от модели (требует проверки по официальным источникам)",
     )
     llm_provider: str = Field("stub", description="Какой ИИ сформировал ответ")
 

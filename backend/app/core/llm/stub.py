@@ -26,6 +26,7 @@ class StubLLMClient(BaseLLMClient):
         document_text: str,
         file_name: str,
         context: list[SearchResult],
+        user_query: str = "",
     ) -> AnalysisResult:
         logger.info(
             "[STUB] Анализ документа «{}» ({} символов), контекст: {} фрагментов",

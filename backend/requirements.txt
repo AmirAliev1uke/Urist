@@ -23,10 +23,13 @@ python-docx==1.1.2
 # --- Embeddings (локально) ---
 sentence-transformers==3.3.1
 
-# --- LLM clients (заготовки для будущего подключения) ---
+# --- LLM clients ---
 openai==1.58.1
 gigachat==0.2.1
+google-genai>=1.0.0
 httpx==0.28.1
+# Поддержка SOCKS-прокси для обхода блокировок (Gemini через V2Ray)
+httpx[socks]==0.28.1
 
 # --- Утилиты ---
 loguru==0.7.3

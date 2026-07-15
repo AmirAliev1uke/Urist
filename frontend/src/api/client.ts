@@ -36,9 +36,15 @@ export async function deleteKnowledgeDocument(id: number): Promise<void> {
 
 // --- Анализ документа (Поток B) ---
 
-export async function analyzeDocument(file: File): Promise<AnalysisResponse> {
+export async function analyzeDocument(
+  file: File,
+  userQuery?: string,
+): Promise<AnalysisResponse> {
   const form = new FormData()
   form.append('file', file)
+  if (userQuery && userQuery.trim()) {
+    form.append('user_query', userQuery.trim())
+  }
   const { data } = await api.post('/api/analyze', form)
   return data
 }

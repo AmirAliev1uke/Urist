@@ -67,12 +67,14 @@ async function analyzeDocument() {
     }
 
     // 2. Отправить в API анализа текста
+    const userQuery = document.getElementById("user-query").value.trim();
     const response = await fetch(`${API_BASE}/api/analyze/text`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         text: text,
         file_name: getDocumentName(),
+        user_query: userQuery,
       }),
     });
 
@@ -279,6 +281,31 @@ function renderReport(data) {
         </div>
         <div class="ref-quote">${escapeHtml(ref.quote.slice(0, 100))}…</div>
         <div class="sim-bar"><div class="sim-fill" style="width:${sim}%"></div></div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Судебная практика от ИИ (с предупреждением)
+  if (r.case_law && r.case_law.length) {
+    html += `<div class="section">
+      <h3>Судебная практика (${r.case_law.length})</h3>
+      <div class="warning-box">
+        ⚠ Судебная практика предоставлена ИИ. Реквизиты дел требуют проверки
+        по официальным источникам (sudact.ru, kad.arbitr.ru).
+      </div>`;
+    r.case_law.forEach((c) => {
+      const verifyBadge = c.needs_verification ? `<span class="badge-warn">требует проверки</span>` : "";
+      html += `<div class="card card-caselaw">
+        <div class="card-title">
+          ${escapeHtml(c.court || "Суд не указан")}
+          ${c.case_number ? " · " + escapeHtml(c.case_number) : ""}
+          ${c.date ? " · " + escapeHtml(c.date) : ""}
+          ${verifyBadge}
+        </div>
+        <div class="card-meta" style="margin-top:5px;"><strong>Суть:</strong> ${escapeHtml(c.subject)}</div>
+        ${c.ruling ? `<div class="card-meta" style="margin-top:3px;"><strong>Вывод суда:</strong> ${escapeHtml(c.ruling)}</div>` : ""}
+        ${c.relevance ? `<div class="card-meta" style="margin-top:3px;"><strong>Релевантность:</strong> ${escapeHtml(c.relevance)}</div>` : ""}
       </div>`;
     });
     html += `</div>`;

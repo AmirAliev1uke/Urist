@@ -48,6 +48,17 @@ def get_llm_client() -> BaseLLMClient:
         logger.info("LLM-провайдер: GigaChat")
         return GigaChatLLMClient()
 
+    if provider == "gemini":
+        if not settings.gemini_api_key:
+            logger.warning(
+                "LLM_PROVIDER=gemini, но GEMINI_API_KEY пуст. Падаю обратно на stub."
+            )
+            return StubLLMClient()
+        from app.core.llm.gemini import GeminiLLMClient  # noqa: WPS433
+
+        logger.info("LLM-провайдер: Gemini ({})", settings.gemini_model)
+        return GeminiLLMClient()
+
     logger.warning(
         "Неизвестный LLM_PROVIDER='{}'. Доступно: stub | gigachat | openai | yandex. "
         "Использую stub.", provider

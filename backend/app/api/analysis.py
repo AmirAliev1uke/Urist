@@ -28,6 +28,7 @@ def _is_allowed_analysis_file(filename: str) -> bool:
 @router.post("", response_model=AnalysisResponse)
 async def analyze_uploaded_document(
     file: UploadFile = File(...),
+    user_query: str = Form(""),
     session: AsyncSession = Depends(get_session),
 ) -> AnalysisResponse:
     """Загрузить PDF юриста для анализа и получить результат.
@@ -63,6 +64,7 @@ async def analyze_uploaded_document(
             file_name=file.filename,
             llm_client=get_llm_client(),
             embedder=get_embedder(),
+            user_query=user_query,
         )
         record.status = "completed"
         record.result_json = result.model_dump()
@@ -129,6 +131,7 @@ class AnalyzeTextRequest(BaseModel):
 
     text: str
     file_name: str = "document.docx"
+    user_query: str = ""
 
 
 @router.post("/text", response_model=AnalysisResponse)
@@ -160,6 +163,7 @@ async def analyze_text_endpoint(
             file_name=payload.file_name,
             llm_client=get_llm_client(),
             embedder=get_embedder(),
+            user_query=payload.user_query,
         )
         record.status = "completed"
         record.result_json = result.model_dump()

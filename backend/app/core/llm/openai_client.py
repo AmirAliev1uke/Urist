@@ -44,6 +44,7 @@ class OpenAILLMClient(BaseLLMClient):
         document_text: str,
         file_name: str,
         context: list[SearchResult],
+        user_query: str = "",
     ) -> AnalysisResult:
         context_block = self._format_context(context)
         user_prompt = self._build_user_prompt(file_name, document_text, context_block)

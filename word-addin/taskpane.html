@@ -217,6 +217,25 @@
     }
     .modal-close:hover { color: var(--text); }
     .modal-body { padding: 14px 16px; overflow-y: auto; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+
+    .user-query {
+      width: 100%; padding: 8px 10px; margin-bottom: 10px;
+      border: 1px solid var(--border); border-radius: 5px;
+      font-family: inherit; font-size: 12px; resize: vertical; min-height: 50px;
+    }
+    .user-query:focus { outline: none; border-color: var(--accent); }
+    .warning-box {
+      background: var(--warn-bg); border-left: 3px solid var(--warn);
+      color: var(--warn); padding: 8px 11px; border-radius: 4px;
+      font-size: 11px; margin-bottom: 10px;
+    }
+    .card-caselaw { border-left-color: var(--reference); }
+    .badge-warn {
+      display: inline-block; padding: 1px 6px; border-radius: 8px;
+      font-size: 9px; font-weight: 600; text-transform: uppercase;
+      background: var(--warn-bg); color: var(--warn); margin-left: 4px;
+    }
+    .field-label { font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 4px; }
   </style>
 </head>
 <body>
@@ -226,6 +245,11 @@
     <div class="actions">
       <button id="analyze-btn" class="btn">🔍 Анализировать документ</button>
       <button id="clear-btn" class="btn btn-secondary" title="Снять подсветку">↺</button>
+    </div>
+
+    <div style="margin-bottom: 14px;">
+      <label class="field-label">Дополнительные указания для ИИ (необязательно)</label>
+      <textarea id="user-query" class="user-query" placeholder="Например: обратить внимание на порядок расторжения, проверить штрафные санкции…"></textarea>
     </div>
 
     <div id="loading" class="loading">

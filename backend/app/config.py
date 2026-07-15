@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     yandex_api_key: str = ""
     yandex_folder_id: str = ""
 
+    # Gemini (Google AI Studio)
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+    # SOCKS-прокси для обхода блокировки (V2Ray). Пусто — без прокси.
+    # Пример: socks5://host.docker.internal:1080
+    llm_proxy: str = ""
+
     # Embeddings
     embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     embedding_dim: int = 384

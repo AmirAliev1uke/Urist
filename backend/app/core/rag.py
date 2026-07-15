@@ -147,6 +147,7 @@ async def analyze_document(
     embedder: Embedder | None = None,
     top_k: int | None = None,
     min_similarity: float | None = None,
+    user_query: str = "",
 ) -> tuple[AnalysisResult, str]:
     """Поток B (из файла): распарсить документ, найти контекст, вызвать LLM.
 
@@ -166,6 +167,7 @@ async def analyze_document(
         embedder=embedder,
         top_k=top_k,
         min_similarity=min_similarity,
+        user_query=user_query,
     )
 
 
@@ -178,6 +180,7 @@ async def analyze_text(
     embedder: Embedder | None = None,
     top_k: int | None = None,
     min_similarity: float | None = None,
+    user_query: str = "",
 ) -> tuple[AnalysisResult, str]:
     """Поток B (из текста): анализ готового текста без парсинга файла.
 
@@ -193,6 +196,7 @@ async def analyze_text(
         embedder=embedder,
         top_k=top_k,
         min_similarity=min_similarity,
+        user_query=user_query,
     )
 
 
@@ -205,6 +209,7 @@ async def _run_analysis(
     embedder: Embedder | None = None,
     top_k: int | None = None,
     min_similarity: float | None = None,
+    user_query: str = "",
 ) -> tuple[AnalysisResult, str]:
     """Общая логика анализа: embedding → поиск в Qdrant → LLM.
 
@@ -235,5 +240,6 @@ async def _run_analysis(
         document_text=document_text,
         file_name=file_name,
         context=context,
+        user_query=user_query,
     )
     return result, document_text

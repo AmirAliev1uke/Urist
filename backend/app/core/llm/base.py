@@ -22,13 +22,15 @@ class BaseLLMClient(ABC):
         document_text: str,
         file_name: str,
         context: list[SearchResult],
+        user_query: str = "",
     ) -> AnalysisResult:
         """Проанализировать документ юриста с опорой на найденный контекст.
 
         Аргументы:
             document_text: полный текст загруженного документа.
             file_name: имя файла (для контекста промпта).
-            context: релевантные нормы права, найденные в pgvector.
+            context: релевантные нормы права, найденные в Qdrant.
+            user_query: дополнительные указания юриста к анализу (необязательно).
 
         Возвращает структурированный AnalysisResult.
         """
